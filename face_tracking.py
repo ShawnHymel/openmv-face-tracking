@@ -39,10 +39,10 @@ THIS SOFTWARE.
 """
 
 import sensor, image, time, utime, ustruct
-import pyb
+from pyb import UART, LED
 
 # Set this to True to see output and visualization
-DEBUG = False
+DEBUG = True
 SERVO_PAN_EN = True
 SERVO_TILT_EN = True
 
@@ -51,20 +51,20 @@ servo_pan_ch = 2        # Pan servo channel
 pulse_pan_min = 1000    # Pan minimum pulse (microseconds)
 pulse_pan_max = 2000    # Pan maximum pulse (microseconds)
 speed_pan = 1.8         # How fast the servo moves to track face (X direction)
-dir_pan = 1             # Direction of servo movement (1 or -1)
 
 # Tilt servo settings
 servo_tilt_ch = 0       # Tilt servo channel
 pulse_tilt_min = 1000   # Tilt minimum pulse (microseconds)
 pulse_tilt_max = 2000   # Tilt maximum pulse (microseconds)
 speed_tilt = 1.8        # How fast the servo moves to track face (Y direction)
-dir_tilt = -1           # Direction of servo movement (1 or -1)
 
 # Other settings
 threshold_x = 20        # Num pixels BB center x can be from CENTER_X
 threshold_y = 20        # Num pixels BB center y can be from CENTER_Y
+dir_x = 1               # Direction of servo movement (1 or -1)
+dir_y = -1              # Direction of servo movement (1 or -1)
 baud_rate = 9600        # Baud rate of Mini Maestro servo controller
-led = pyb.Pin("P2", pyb.Pin.OUT_PP) # LED that lights up on face detect
+
 
 # Commands (for talking to Maestro servo controller)
 cmd_set_target = 0x84
@@ -112,7 +112,7 @@ CENTER_X = int(WIDTH / 2 + 0.5)
 CENTER_Y = int(HEIGHT / 2 + 0.5)
 
 # Pour a bowl of serial
-uart = pyb.UART(1, baud_rate)
+uart = UART(1, baud_rate)
 
 # Print out sensor stats
 print("Width:", WIDTH, "Height:", HEIGHT)
@@ -130,7 +130,7 @@ servo_pos_y = int(((pulse_tilt_max - pulse_tilt_min) / 2) + pulse_tilt_min)
 
 # Create LED for debugging
 if DEBUG:
-    green_led = pyb.LED(2)
+    green_led = LED(2)
 
 # Superloop
 while(True):
@@ -169,9 +169,6 @@ while(True):
             print(sensor.width(), sensor.height())
             green_led.on()
 
-        # Turn on LED
-        led.high()
-
         # Find x, y of center of largest face in image
         face_x = largest_face_bb[0] + int((largest_face_bb[2]) / 2 + 0.5)
         face_y = largest_face_bb[1] + int((largest_face_bb[3]) / 2 + 0.5)
@@ -199,8 +196,8 @@ while(True):
             diff_y = 0
 
         # Calculate how fast the servo should move based on distance
-        mov_x = dir_pan * speed_pan * diff_x
-        mov_y = dir_tilt * speed_tilt * diff_y
+        mov_x = dir_x * speed_pan * diff_x
+        mov_y = dir_y * speed_tilt * diff_y
 
         # Print out relative movement
         if DEBUG:
@@ -229,7 +226,6 @@ while(True):
     else:
         if DEBUG:
             green_led.off()
-        led.low()
 
         # ---------------------------------------------------------------------
 
