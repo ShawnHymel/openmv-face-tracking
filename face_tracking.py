@@ -38,62 +38,109 @@ THIS SOFTWARE.
 
 """
 
-import sensor, image, time, utime, ustruct
-from pyb import UART, LED
+import pyb, sensor, image, time, utime, ustruct
 
-# Set this to True to see output and visualization
+# Set this to true to see serial output and LED on face detection
 DEBUG = True
+
+# Set to true to enable pan and tilt motion
 SERVO_PAN_EN = True
 SERVO_TILT_EN = True
+
+# Generic servo settings
+speed_limit = 100        # Speed limit (0.25 us)/(10 ms) of servos
+accel_limit = 20        # Acceleration limit (0.25 us)/(10 ms)/(80 ms) of servos
 
 # Pan servo settings
 servo_pan_ch = 2        # Pan servo channel
 pulse_pan_min = 1000    # Pan minimum pulse (microseconds)
 pulse_pan_max = 2000    # Pan maximum pulse (microseconds)
-speed_pan = 1.8         # How fast the servo moves to track face (X direction)
+speed_pan = 1.5         # How fast the servo moves to track face (X direction)
 
 # Tilt servo settings
 servo_tilt_ch = 0       # Tilt servo channel
 pulse_tilt_min = 1000   # Tilt minimum pulse (microseconds)
 pulse_tilt_max = 2000   # Tilt maximum pulse (microseconds)
-speed_tilt = 1.8        # How fast the servo moves to track face (Y direction)
+speed_tilt = 1.5        # How fast the servo moves to track face (Y direction)
+
+# GPIO pins
+led = pyb.Pin("P2", pyb.Pin.OUT_PP) # LED that lights up on face detect
+snd = pyb.Pin("P3", pyb.Pin.OUT_PP) # SND that lights up on face detect
 
 # Other settings
-threshold_x = 20        # Num pixels BB center x can be from CENTER_X
-threshold_y = 20        # Num pixels BB center y can be from CENTER_Y
+threshold_x = 10        # Num pixels BB center x can be from CENTER_X
+threshold_y = 10        # Num pixels BB center y can be from CENTER_Y
 dir_x = 1               # Direction of servo movement (1 or -1)
 dir_y = -1              # Direction of servo movement (1 or -1)
+maestro_uart_ch = 1     # UART channel connected to Maestro board
 baud_rate = 9600        # Baud rate of Mini Maestro servo controller
-
+speed_limit_min = 0     # Speed limit minimum (0 is infinite)
+speed_limit_max = 10000 # Speed limit maximum
+accel_limit_min = 0     # Acceleration limit minimum (0 is infinite)
+accel_limit_max = 255   # Acceleration limit maximum
 
 # Commands (for talking to Maestro servo controller)
 cmd_set_target = 0x84
+cmd_set_speed = 0x87
+cmd_set_accel = 0x89
 
 ###############################################################################
 # Functions
 
-
-def servo_set_target(ch, pulse):
+def servo_send_cmd(cmd, ch, payload):
     """
-    Write pulse width (in microseconds) to given channel to control servo.
+    Send generic compact protocol command to servo controller:
+    | cmd | ch | msg lsb | msg msb |
     """
 
     # Check that channel is in range
     if (ch < 0) or (ch > 11):
         return
 
-    # Pulse number is 4x pulse width (in microseconds)
-    p_num = 4 * int(pulse)
-
     # Construct message
     msg = bytearray()
-    msg.append(cmd_set_target)
+    msg.append(cmd)
     msg.append(ch)
-    msg.append(p_num & 0x7F)
-    msg.append((p_num >> 7) & 0x7F)
+    msg.append(payload & 0x7F)
+    msg.append((payload >> 7) & 0x7F)
 
     # Send a message
     uart.write(msg)
+
+def servo_set_target(ch, pulse):
+    """
+    Write pulse width (in microseconds) to given channel to control servo.
+    """
+
+    # Pulse number is 4x pulse width (in microseconds)
+    p_num = 4 * int(pulse)
+
+    # Send command to servo controller
+    servo_send_cmd(cmd_set_target, ch, p_num)
+
+def servo_set_speed_limit(ch, speed):
+    """
+    Set speed limit of servo on a given channel.
+    """
+
+    # Check to make sure speed is in range
+    speed = max(speed, speed_limit_min)
+    speed = min(speed, speed_limit_max)
+
+    # Send command to servo controller
+    servo_send_cmd(cmd_set_speed, ch, speed)
+
+def servo_set_speed_limit(ch, accel):
+    """
+    Set accel limit of servo on a given channel.
+    """
+
+    # Check to make sure speed is in range
+    speed = max(accel, accel_limit_min)
+    speed = min(accel, accel_limit_max)
+
+    # Send command to servo controller
+    servo_send_cmd(cmd_set_accel, ch, accel)
 
 ###############################################################################
 # Main
@@ -112,7 +159,7 @@ CENTER_X = int(WIDTH / 2 + 0.5)
 CENTER_Y = int(HEIGHT / 2 + 0.5)
 
 # Pour a bowl of serial
-uart = UART(1, baud_rate)
+uart = pyb.UART(maestro_uart_ch, baud_rate)
 
 # Print out sensor stats
 print("Width:", WIDTH, "Height:", HEIGHT)
@@ -124,13 +171,21 @@ print(face_cascade)
 # Start clock
 clock = time.clock()
 
+# Set servo speed limits on both servos
+servo_set_speed_limit(servo_pan_ch, speed_limit)
+servo_set_speed_limit(servo_tilt_ch, speed_limit)
+
+# Set servo accel limits on both servos
+servo_set_speed_limit(servo_pan_ch, accel_limit)
+servo_set_speed_limit(servo_tilt_ch, accel_limit)
+
 # Initial servo positions
 servo_pos_x = int(((pulse_pan_max - pulse_pan_min) / 2) + pulse_pan_min)
 servo_pos_y = int(((pulse_tilt_max - pulse_tilt_min) / 2) + pulse_tilt_min)
 
 # Create LED for debugging
 if DEBUG:
-    green_led = LED(2)
+    green_led = pyb.LED(2)
 
 # Superloop
 while(True):
@@ -168,6 +223,10 @@ while(True):
             print("Face:", largest_face_bb)
             print(sensor.width(), sensor.height())
             green_led.on()
+
+        # Turn on LED and play sound
+        led.high()
+        snd.low()
 
         # Find x, y of center of largest face in image
         face_x = largest_face_bb[0] + int((largest_face_bb[2]) / 2 + 0.5)
@@ -223,7 +282,10 @@ while(True):
                 print("Pulse Y:", int(servo_pos_y))
             servo_set_target(servo_tilt_ch, servo_pos_y)
 
+    # No face detected
     else:
+        led.low()
+        snd.high()
         if DEBUG:
             green_led.off()
 
@@ -231,5 +293,5 @@ while(True):
 
 
     # Print FPS
-    #if DEBUG:
-        #print("FPS:", clock.fps())
+    if DEBUG:
+        print("FPS:", clock.fps())
