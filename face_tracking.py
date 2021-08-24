@@ -65,10 +65,10 @@ pulse_tilt_max = 2000   # Tilt maximum pulse (microseconds)
 speed_tilt = 1.5        # How fast the servo moves to track face (Y direction)
 
 # Random motion settings
-rnd_pan_min = 1200      # Minimum pan random motion
-rnd_pan_max = 1800      # Maximum pan random motion
-rnd_tilt_min = 1200     # Minimum pan random motion
-rnd_tilt_max = 1800     # Maximum pan random motion
+rnd_pan_min = 1350      # Minimum pan random motion
+rnd_pan_max = 1650      # Maximum pan random motion
+rnd_tilt_min = 1350     # Minimum pan random motion
+rnd_tilt_max = 1650     # Maximum pan random motion
 wait_delay_min = 1000   # Minimum wait (ms) before moving around randomly
 wait_delay_max = 3000   # Maximum wait (ms) before moving around randomly
 
