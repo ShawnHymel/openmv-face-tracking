@@ -38,10 +38,11 @@ THIS SOFTWARE.
 
 """
 
-import pyb, sensor, image, time, utime, ustruct
+import pyb, sensor, image, time, utime, ustruct, random
 
 # Set this to true to see serial output and LED on face detection
 DEBUG = True
+DEBUG_FPS = False
 
 # Set to true to enable pan and tilt motion
 SERVO_PAN_EN = True
@@ -62,6 +63,14 @@ servo_tilt_ch = 0       # Tilt servo channel
 pulse_tilt_min = 1000   # Tilt minimum pulse (microseconds)
 pulse_tilt_max = 2000   # Tilt maximum pulse (microseconds)
 speed_tilt = 1.5        # How fast the servo moves to track face (Y direction)
+
+# Random motion settings
+rnd_pan_min = 1200      # Minimum pan random motion
+rnd_pan_max = 1800      # Maximum pan random motion
+rnd_tilt_min = 1200     # Minimum pan random motion
+rnd_tilt_max = 1800     # Maximum pan random motion
+wait_delay_min = 1000   # Minimum wait (ms) before moving around randomly
+wait_delay_max = 3000   # Maximum wait (ms) before moving around randomly
 
 # GPIO pins
 led = pyb.Pin("P2", pyb.Pin.OUT_PP) # LED that lights up on face detect
@@ -187,6 +196,10 @@ servo_pos_y = int(((pulse_tilt_max - pulse_tilt_min) / 2) + pulse_tilt_min)
 if DEBUG:
     green_led = pyb.LED(2)
 
+# Create random wait period before moving camera around
+wait_timestamp = time.ticks_ms()
+wait_delay = random.randrange(wait_delay_min, wait_delay_max + 1)
+
 # Superloop
 while(True):
 
@@ -227,6 +240,9 @@ while(True):
         # Turn on LED and play sound
         led.high()
         snd.low()
+
+        # Reset wait delay
+        wait_timestamp = time.ticks_ms()
 
         # Find x, y of center of largest face in image
         face_x = largest_face_bb[0] + int((largest_face_bb[2]) / 2 + 0.5)
@@ -284,14 +300,31 @@ while(True):
 
     # No face detected
     else:
+
+        # Make sure LEDs are off and no sound is playing
         led.low()
         snd.high()
         if DEBUG:
             green_led.off()
 
+        # Wait for some random amount of time before moving...randomly
+        if (time.ticks_ms() - wait_timestamp) >= wait_delay:
+            wait_timestamp = time.ticks_ms()
+            wait_delay = random.randrange(wait_delay_min, wait_delay_max + 1)
+
+            # Generate random x, y coordinates
+            rnd_x = random.randrange(rnd_pan_min, rnd_pan_max + 1)
+            rnd_y = random.randrange(rnd_tilt_min, rnd_tilt_max + 1)
+
+            # Move to location
+            if DEBUG:
+                print("Moving to: (" + str(rnd_x) + ", " + str(rnd_y) + ")")
+            servo_set_target(servo_pan_ch, rnd_x)
+            servo_set_target(servo_tilt_ch, rnd_y)
+
         # ---------------------------------------------------------------------
 
 
     # Print FPS
-    if DEBUG:
+    if DEBUG_FPS:
         print("FPS:", clock.fps())
