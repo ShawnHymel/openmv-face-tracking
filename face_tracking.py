@@ -49,7 +49,7 @@ SERVO_PAN_EN = True
 SERVO_TILT_EN = True
 
 # Generic servo settings
-speed_limit = 100        # Speed limit (0.25 us)/(10 ms) of servos
+speed_limit = 20        # Speed limit (0.25 us)/(10 ms) of servos
 accel_limit = 20        # Acceleration limit (0.25 us)/(10 ms)/(80 ms) of servos
 
 # Pan servo settings
@@ -63,6 +63,19 @@ servo_tilt_ch = 0       # Tilt servo channel
 pulse_tilt_min = 1000   # Tilt minimum pulse (microseconds)
 pulse_tilt_max = 2000   # Tilt maximum pulse (microseconds)
 speed_tilt = 1.5        # How fast the servo moves to track face (Y direction)
+
+# Left ear servo settings
+servo_ear_l_ch = 3      # Left ear servo channel
+pulse_ear_l_min = 1000  # Left ear minimum pulse (microseconds)
+pulse_ear_l_max = 2000  # Left ear maximum pulse (microseconds)
+speed_ear_l = 1.5       # How fast the servo moves (left ear)
+
+# Right ear servo settings
+sero_ear_r_ch = 4       # Right ear servo channel
+servo_ear_r_ch = 3      # Right ear servo channel
+pulse_ear_r_min = 1000  # Right ear minimum pulse (microseconds)
+pulse_ear_r_max = 2000  # Right ear maximum pulse (microseconds)
+speed_ear_r = 1.5       # How fast the servo moves (right ear)
 
 # Random motion settings
 rnd_pan_min = 1350      # Minimum pan random motion
@@ -139,7 +152,7 @@ def servo_set_speed_limit(ch, speed):
     # Send command to servo controller
     servo_send_cmd(cmd_set_speed, ch, speed)
 
-def servo_set_speed_limit(ch, accel):
+def servo_set_accel_limit(ch, accel):
     """
     Set accel limit of servo on a given channel.
     """
@@ -180,13 +193,17 @@ print(face_cascade)
 # Start clock
 clock = time.clock()
 
-# Set servo speed limits on both servos
+# Set servo speed limits on servos
 servo_set_speed_limit(servo_pan_ch, speed_limit)
 servo_set_speed_limit(servo_tilt_ch, speed_limit)
+servo_set_speed_limit(servo_ear_l_ch, speed_limit)
+servo_set_speed_limit(servo_ear_r_ch, speed_limit)
 
-# Set servo accel limits on both servos
-servo_set_speed_limit(servo_pan_ch, accel_limit)
-servo_set_speed_limit(servo_tilt_ch, accel_limit)
+# Set servo accel limits on servos
+servo_set_accel_limit(servo_pan_ch, accel_limit)
+servo_set_accel_limit(servo_tilt_ch, accel_limit)
+servo_set_accel_limit(servo_ear_l_ch, accel_limit)
+servo_set_accel_limit(servo_ear_r_ch, accel_limit)
 
 # Initial servo positions
 servo_pos_x = int(((pulse_pan_max - pulse_pan_min) / 2) + pulse_pan_min)
@@ -197,8 +214,10 @@ if DEBUG:
     green_led = pyb.LED(2)
 
 # Create random wait period before moving camera around
-wait_timestamp = time.ticks_ms()
-wait_delay = random.randrange(wait_delay_min, wait_delay_max + 1)
+wait_timestamp_face = time.ticks_ms()
+wait_timestamp_ears = time.ticks_ms()
+wait_delay_face = random.randrange(wait_delay_min, wait_delay_max + 1)
+wait_delay_ears = random.randrange(wait_delay_min, wait_delay_max + 1)
 
 # Superloop
 while(True):
@@ -308,9 +327,9 @@ while(True):
             green_led.off()
 
         # Wait for some random amount of time before moving...randomly
-        if (time.ticks_ms() - wait_timestamp) >= wait_delay:
-            wait_timestamp = time.ticks_ms()
-            wait_delay = random.randrange(wait_delay_min, wait_delay_max + 1)
+        if (time.ticks_ms() - wait_timestamp_face) >= wait_delay_face:
+            wait_timestamp_face = time.ticks_ms()
+            wait_delay_face = random.randrange(wait_delay_min, wait_delay_max + 1)
 
             # Generate random x, y coordinates
             rnd_x = random.randrange(rnd_pan_min, rnd_pan_max + 1)
