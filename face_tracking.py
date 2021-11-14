@@ -1,5 +1,5 @@
 """
-Pan/tilt face tracking demo
+Pan/tilt face tracking demo (with ears!)
 
 Connect OpenMV to Mini Maestro servo controller to control pan/tilt mechanism.
 This program will have the servos move such that the largest face seen by the
