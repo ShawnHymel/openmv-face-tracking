@@ -56,34 +56,35 @@ accel_limit = 20        # Acceleration limit (0.25 us)/(10 ms)/(80 ms) of servos
 servo_pan_ch = 2        # Pan servo channel
 pulse_pan_min = 1000    # Pan minimum pulse (microseconds)
 pulse_pan_max = 2000    # Pan maximum pulse (microseconds)
+rnd_pan_min = 1350      # Minimum pan random motion
+rnd_pan_max = 1650      # Maximum pan random motion
 speed_pan = 1.5         # How fast the servo moves to track face (X direction)
 
 # Tilt servo settings
 servo_tilt_ch = 0       # Tilt servo channel
 pulse_tilt_min = 1000   # Tilt minimum pulse (microseconds)
 pulse_tilt_max = 2000   # Tilt maximum pulse (microseconds)
+rnd_tilt_min = 1350     # Minimum pan random motion
+rnd_tilt_max = 1650     # Maximum pan random motion
 speed_tilt = 1.5        # How fast the servo moves to track face (Y direction)
 
 # Left ear servo settings
 servo_ear_l_ch = 3      # Left ear servo channel
 pulse_ear_l_min = 1000  # Left ear minimum pulse (microseconds)
 pulse_ear_l_max = 2000  # Left ear maximum pulse (microseconds)
-pulse_ear_l_max = 2000  # Left ear maximum pulse (microseconds)
+forward_ear_l = 1900    # Value for ear to be facing "forward"
+rnd_ear_l_min = 1350    # Minimum left ear random motion
+rnd_ear_l_max = 1650    # Maximum left ear random motion
 
 # Right ear servo settings
-servo_ear_r_ch = 4       # Right ear servo channel
+servo_ear_r_ch = 4      # Right ear servo channel
 pulse_ear_r_min = 1000  # Right ear minimum pulse (microseconds)
 pulse_ear_r_max = 2000  # Right ear maximum pulse (microseconds)
+forward_ear_r = 1900    # Value for ear to be facing "forward"
+rnd_ear_r_min = 1350    # Minimum right ear random motion
+rnd_ear_r_max = 1650    # Maximum right ear random motion
 
 # Random motion settings
-rnd_pan_min = 1350      # Minimum pan random motion
-rnd_pan_max = 1650      # Maximum pan random motion
-rnd_tilt_min = 1350     # Minimum pan random motion
-rnd_tilt_max = 1650     # Maximum pan random motion
-rnd_l_min = 1350        # Minimum left ear random motion
-rnd_l_max = 1650        # Maximum left ear random motion
-rnd_r_min = 1350        # Minimum right ear random motion
-rnd_r_max = 1650        # Maximum right ear random motion
 wait_delay_min = 1000   # Minimum wait (ms) before moving around randomly
 wait_delay_max = 3000   # Maximum wait (ms) before moving around randomly
 
@@ -318,6 +319,13 @@ while(True):
             if DEBUG:
                 print("Pulse Y:", int(servo_pos_y))
             servo_set_target(servo_tilt_ch, servo_pos_y)
+            
+        # Set ears to one direction
+        if DEBUG:
+            print(  "Left ear: " + str(forward_ear_l) + 
+                    " Right ear: " + str(forward_ear_r))
+        servo_set_target(servo_ear_l_ch, forward_ear_l)
+        servo_set_target(servo_ear_r_ch, forward_ear_r)
 
     # No face detected
     else:
@@ -352,8 +360,8 @@ while(True):
                                                 wait_delay_max + 1)
                                                 
             # Generate random left and right coordinates
-            rnd_l = random.randrange(rnd_l_min, rnd_l_max + 1)
-            rnd_r = random.randrange(rnd_r_min, rnd_r_max + 1)
+            rnd_l = random.randrange(rnd_ear_l_min, rnd_ear_l_max + 1)
+            rnd_r = random.randrange(rnd_ear_r_min, rnd_ear_r_max + 1)
             
             # Move to location
             if DEBUG:
