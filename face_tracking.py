@@ -68,20 +68,22 @@ speed_tilt = 1.5        # How fast the servo moves to track face (Y direction)
 servo_ear_l_ch = 3      # Left ear servo channel
 pulse_ear_l_min = 1000  # Left ear minimum pulse (microseconds)
 pulse_ear_l_max = 2000  # Left ear maximum pulse (microseconds)
-speed_ear_l = 1.5       # How fast the servo moves (left ear)
+pulse_ear_l_max = 2000  # Left ear maximum pulse (microseconds)
 
 # Right ear servo settings
-sero_ear_r_ch = 4       # Right ear servo channel
-servo_ear_r_ch = 3      # Right ear servo channel
+servo_ear_r_ch = 4       # Right ear servo channel
 pulse_ear_r_min = 1000  # Right ear minimum pulse (microseconds)
 pulse_ear_r_max = 2000  # Right ear maximum pulse (microseconds)
-speed_ear_r = 1.5       # How fast the servo moves (right ear)
 
 # Random motion settings
 rnd_pan_min = 1350      # Minimum pan random motion
 rnd_pan_max = 1650      # Maximum pan random motion
 rnd_tilt_min = 1350     # Minimum pan random motion
 rnd_tilt_max = 1650     # Maximum pan random motion
+rnd_l_min = 1350        # Minimum left ear random motion
+rnd_l_max = 1650        # Maximum left ear random motion
+rnd_r_min = 1350        # Minimum right ear random motion
+rnd_r_max = 1650        # Maximum right ear random motion
 wait_delay_min = 1000   # Minimum wait (ms) before moving around randomly
 wait_delay_max = 3000   # Maximum wait (ms) before moving around randomly
 
@@ -326,10 +328,11 @@ while(True):
         if DEBUG:
             green_led.off()
 
-        # Wait for some random amount of time before moving...randomly
+        # Wait for some random amount of time before moving the face...randomly
         if (time.ticks_ms() - wait_timestamp_face) >= wait_delay_face:
             wait_timestamp_face = time.ticks_ms()
-            wait_delay_face = random.randrange(wait_delay_min, wait_delay_max + 1)
+            wait_delay_face = random.randrange( wait_delay_min, 
+                                                wait_delay_max + 1)
 
             # Generate random x, y coordinates
             rnd_x = random.randrange(rnd_pan_min, rnd_pan_max + 1)
@@ -337,9 +340,27 @@ while(True):
 
             # Move to location
             if DEBUG:
-                print("Moving to: (" + str(rnd_x) + ", " + str(rnd_y) + ")")
+                print("Face: random move to (" + str(rnd_x) + ", " + 
+                        str(rnd_y) + ")")
             servo_set_target(servo_pan_ch, rnd_x)
             servo_set_target(servo_tilt_ch, rnd_y)
+            
+        # Wait for some random amount of time before moving the ears...randomly
+        if (time.ticks_ms() - wait_timestamp_ears) >= wait_delay_ears:
+            wait_timestamp_ears = time.ticks_ms()
+            wait_delay_ears = random.randrange( wait_delay_min, 
+                                                wait_delay_max + 1)
+                                                
+            # Generate random left and right coordinates
+            rnd_l = random.randrange(rnd_l_min, rnd_l_max + 1)
+            rnd_r = random.randrange(rnd_r_min, rnd_r_max + 1)
+            
+            # Move to location
+            if DEBUG:
+                print("Left ear random move to: " + str(rnd_l))
+                print("Right ear random move to: " + str(rnd_r))
+            servo_set_target(servo_ear_l_ch, rnd_l)
+            servo_set_target(servo_ear_r_ch, rnd_r)
 
         # ---------------------------------------------------------------------
 
